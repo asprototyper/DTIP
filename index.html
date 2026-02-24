@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book an Appointment</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #111110;
+      --white: #fafaf8;
+      --gray-100: #f5f5f3;
+      --gray-200: #e8e8e4;
+      --gray-300: #d0d0ca;
+      --gray-400: #a0a09a;
+      --gray-600: #6b6b65;
+      --accent: #2d5a3d;
+      --accent-light: #e8f0eb;
+      --pending: #fffbea;
+      --pending-border: #f5c842;
+      --pending-text: #92700a;
+      --full: #f5ede8;
+      --full-text: #a0522d;
+      --danger: #c0392b;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--white);
+      color: var(--black);
+      min-height: 100vh;
+      font-weight: 300;
+    }
+
+    header {
+      padding: 2.5rem 3rem;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: baseline;
+      gap: 0.8rem;
+      background: var(--white);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.6rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+    }
+
+    header span {
+      font-size: 0.8rem;
+      color: var(--gray-400);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 3rem 2rem 6rem;
+    }
+
+    .section-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      margin-bottom: 1.2rem;
+      font-weight: 500;
+    }
+
+    .section-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2rem;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .section-sub {
+      color: var(--gray-600);
+      font-size: 0.95rem;
+      margin-bottom: 2.5rem;
+      line-height: 1.6;
+    }
+
+    /* STEPS */
+    .steps { display: flex; align-items: center; margin-bottom: 3rem; }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.85rem;
+      color: var(--gray-400);
+    }
+
+    .step.active { color: var(--black); }
+    .step.done { color: var(--accent); }
+
+    .step-num {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      border: 1.5px solid currentColor;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 500;
+      transition: all 0.3s;
+    }
+
+    .step.active .step-num { background: var(--black); border-color: var(--black); color: var(--white); }
+    .step.done .step-num { background: var(--accent); border-color: var(--accent); color: var(--white); }
+    .step-line { flex: 1; height: 1px; background: var(--gray-200); margin: 0 0.8rem; }
+
+    /* NOTICE */
+    .notice {
+      padding: 0.9rem 1.2rem;
+      background: var(--gray-100);
+      border-left: 3px solid var(--gray-400);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.85rem;
+      color: var(--gray-600);
+      line-height: 1.5;
+      margin-bottom: 2rem;
+    }
+
+    /* TWO-COLUMN LAYOUT */
+    .booking-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.5rem;
+      align-items: start;
+    }
+
+    .booking-layout.form-hidden {
+      grid-template-columns: 1fr;
+      max-width: 640px;
+    }
+
+    .left-col, .right-col {
+      transition: all 0.4s ease;
+    }
+
+    .right-col {
+      opacity: 0;
+      transform: translateX(20px);
+      pointer-events: none;
+      display: none;
+    }
+
+    .right-col.visible {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: all;
+      display: block;
+    }
+
+    /* CALENDAR */
+    .calendar-wrapper {
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .calendar-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.2rem 1.5rem;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .calendar-header h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.1rem; font-weight: 400;
+    }
+
+    .cal-nav { display: flex; gap: 0.5rem; }
+
+    .cal-nav button {
+      width: 32px; height: 32px;
+      border: 1px solid var(--gray-200);
+      background: var(--white);
+      border-radius: 6px;
+      cursor: pointer; font-size: 1rem;
+      color: var(--gray-600);
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .cal-nav button:hover { background: var(--gray-100); color: var(--black); }
+
+    .calendar-grid { padding: 1.2rem 1.5rem; }
+
+    .day-labels {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      margin-bottom: 0.5rem;
+    }
+
+    .day-label {
+      text-align: center;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      padding: 0.4rem 0;
+      font-weight: 500;
+    }
+
+    .dates-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+
+    .date-cell {
+      aspect-ratio: 1;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      color: var(--gray-300);
+      transition: all 0.2s;
+    }
+
+    .date-cell.current-month { color: var(--black); }
+    .date-cell.past, .date-cell.weekend { color: var(--gray-200); }
+    .date-cell.today { font-weight: 500; color: var(--accent); }
+
+    .date-cell.available {
+      cursor: pointer;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .date-cell.available:hover {
+      background: var(--accent);
+      color: var(--white);
+      transform: scale(1.08);
+    }
+
+    .date-cell.selected {
+      background: var(--accent) !important;
+      color: var(--white) !important;
+      font-weight: 500;
+    }
+
+    .date-cell.fully-booked {
+      background: var(--full);
+      color: var(--full-text);
+      font-size: 0.78rem;
+    }
+
+    /* LEGEND */
+    .legend { display: flex; gap: 1.5rem; margin-top: 1rem; flex-wrap: wrap; }
+
+    .legend-item {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.78rem; color: var(--gray-600);
+    }
+
+    .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+    .legend-dot.available { background: var(--accent-light); border: 1.5px solid var(--accent); }
+    .legend-dot.pending { background: var(--pending); border: 1.5px solid var(--pending-border); }
+    .legend-dot.full { background: var(--full); border: 1.5px solid var(--full-text); }
+    .legend-dot.unavailable { background: var(--white); border: 1.5px solid var(--gray-200); }
+
+    /* SLOTS */
+    .slots-section {
+      margin-top: 1.5rem;
+      opacity: 0; transform: translateY(8px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .slots-section.visible { opacity: 1; transform: translateY(0); pointer-events: all; }
+
+    .slots-date-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.2rem; margin-bottom: 0.3rem;
+    }
+
+    .slots-subtitle { font-size: 0.82rem; color: var(--gray-600); margin-bottom: 1.2rem; line-height: 1.5; }
+
+    .schedule-block { margin-bottom: 1.5rem; }
+
+    .schedule-label {
+      font-size: 0.7rem; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--gray-400);
+      font-weight: 500; margin-bottom: 0.8rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+
+    .schedule-label::after { content:''; flex:1; height:1px; background: var(--gray-200); }
+
+    .slots-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+    .slot-btn {
+      padding: 0.45rem 0.85rem;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      background: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      cursor: pointer;
+      color: var(--black);
+      transition: all 0.2s;
+    }
+
+    .slot-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+    .slot-btn.selected { border-color: var(--accent); background: var(--accent); color: var(--white); }
+
+    /* PENDING slot - yellow highlight */
+    .slot-btn.pending {
+      border-color: var(--pending-border);
+      background: var(--pending);
+      color: var(--pending-text);
+      cursor: pointer;
+    }
+    .slot-btn.pending:hover {
+      border-color: #d4aa10;
+      background: #fff3b0;
+    }
+    .slot-btn.pending.selected {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: var(--white);
+    }
+
+    .slot-btn.taken {
+      border-color: var(--gray-200);
+      color: var(--gray-300);
+      background: var(--gray-100);
+      cursor: not-allowed;
+      text-decoration: line-through;
+    }
+
+    .all-taken {
+      font-size: 0.88rem; color: var(--full-text);
+      background: var(--full);
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      font-style: italic;
+    }
+
+    .selection-summary {
+      margin-top: 1.2rem;
+      padding: 0.9rem 1.1rem;
+      background: var(--accent-light);
+      border-radius: 8px;
+      border: 1px solid #c5ddc9;
+      font-size: 0.85rem;
+      color: var(--accent);
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .selection-summary.visible { display: flex; }
+
+    .clear-btn {
+      background: none; border: none;
+      color: var(--accent); cursor: pointer;
+      font-size: 0.8rem; text-decoration: underline;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* RIGHT COL - FORM */
+    .right-col-header {
+      margin-bottom: 1.2rem;
+    }
+
+    /* SUGGESTION BANNER */
+    .suggestion-banner {
+      padding: 0.85rem 1.1rem;
+      background: var(--accent-light);
+      border: 1px solid #c5ddc9;
+      border-radius: 10px;
+      margin-bottom: 1.2rem;
+      font-size: 0.85rem;
+      color: var(--accent);
+      line-height: 1.5;
+    }
+
+    .suggestion-banner strong {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 0.2rem;
+    }
+
+    .suggestion-banner .suggestion-note {
+      font-size: 0.78rem;
+      color: #4a7a5a;
+      margin-top: 0.3rem;
+      font-style: italic;
+    }
+
+    .tally-wrapper {
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .tally-wrapper iframe {
+      width: 100%; min-height: 720px;
+      border: none; display: block;
+    }
+
+    .error-state {
+      padding: 1.5rem;
+      background: #fdf2f0;
+      border: 1px solid #f5c6c0;
+      border-radius: 8px;
+      color: var(--danger);
+      font-size: 0.88rem;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      .booking-layout {
+        grid-template-columns: 1fr !important;
+      }
+      .right-col {
+        transform: translateY(20px);
+      }
+      .right-col.visible {
+        transform: translateY(0);
+      }
+      header { padding: 1.5rem; }
+      .container { padding: 2rem 1.2rem 4rem; }
+      .section-title { font-size: 1.5rem; }
+      .step span:not(.step-num) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>DTIP Appointments Testing</h1>
+  <span>Booking Portal</span>
+</header>
+
+<div class="container">
+
+  <div class="steps">
+    <div class="step active" id="step1-indicator">
+      <div class="step-num">1</div>
+      <span>Choose a time</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" id="step2-indicator">
+      <div class="step-num">2</div>
+      <span>Your details</span>
+    </div>
+  </div>
+
+  <!-- BOOKING LAYOUT: left = calendar+slots, right = form -->
+  <div class="booking-layout form-hidden" id="booking-layout">
+
+    <!-- LEFT COLUMN -->
+    <div class="left-col">
+      <p class="section-label">Step 1</p>
+      <h2 class="section-title">Select an available date</h2>
+      <p class="section-sub">Green dates have open slots. Yellow slots have pending requests from others.</p>
+
+      <div class="notice">
+        ⓘ All appointments are subject to admin approval. Your preferred time will be reviewed and confirmed via email.
+      </div>
+
+      <div class="calendar-wrapper">
+        <div class="calendar-header">
+          <h3 id="cal-month-label">Loading...</h3>
+          <div class="cal-nav">
+            <button onclick="changeMonth(-1)">‹</button>
+            <button onclick="changeMonth(1)">›</button>
+          </div>
+        </div>
+        <div class="calendar-grid">
+          <div class="day-labels">
+            <div class="day-label">Sun</div>
+            <div class="day-label">Mon</div>
+            <div class="day-label">Tue</div>
+            <div class="day-label">Wed</div>
+            <div class="day-label">Thu</div>
+            <div class="day-label">Fri</div>
+            <div class="day-label">Sat</div>
+          </div>
+          <div class="dates-grid" id="dates-grid">
+            <div class="loading-state" style="grid-column:1/-1; text-align:center; padding:2rem; color:#a0a09a; font-size:0.9rem;">
+              <div style="width:20px;height:20px;border:2px solid #e8e8e4;border-top-color:#2d5a3d;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 1rem;"></div>
+              Loading availability…
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot available"></div> Available</div>
+        <div class="legend-item"><div class="legend-dot pending"></div> Has pending requests</div>
+        <div class="legend-item"><div class="legend-dot full"></div> Fully booked</div>
+        <div class="legend-item"><div class="legend-dot unavailable"></div> Unavailable</div>
+      </div>
+
+      <!-- SLOTS -->
+      <div class="slots-section" id="slots-section">
+        <hr style="border:none;border-top:1px solid var(--gray-200);margin:1.8rem 0 1.3rem">
+        <h3 class="slots-date-title" id="slots-date-title"></h3>
+        <p class="slots-subtitle">
+          🟡 Yellow = someone else has a pending request for this slot (still bookable)<br>
+          ~~Strikethrough~~ = fully approved, unavailable
+        </p>
+        <div id="slots-content"></div>
+        <div class="selection-summary" id="selection-summary">
+          <span>Selected: <strong id="summary-text"></strong></span>
+          <button class="clear-btn" onclick="clearSelection()">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN (form, appears beside calendar) -->
+    <div class="right-col" id="step2">
+      <div class="right-col-header">
+        <p class="section-label">Step 2</p>
+        <h2 class="section-title">Fill in your details</h2>
+        <p class="section-sub" style="margin-bottom:1rem;">Complete the form below to submit your request.</p>
+      </div>
+
+      <!-- SUGGESTION BANNER -->
+      <div class="suggestion-banner" id="suggestion-banner">
+        <strong>📅 Your selected time</strong>
+        <span id="suggestion-text">—</span>
+        <div class="suggestion-note">ℹ️ Please select this same date and time in the form below — the form does not auto-fill from your calendar selection.</div>
+      </div>
+
+      <div class="tally-wrapper">
+        <iframe src="https://tally.so/embed/J96LOY?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1"
+          title="Appointment Request Form"
+          allowfullscreen
+          allow="camera; microphone; autoplay; encrypted-media;">
+        </iframe>
+      </div>
+    </div>
+
+  </div><!-- end .booking-layout -->
+
+</div>
+
+<style>
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────────────────────
+  const AIRTABLE_TOKEN = 'pat2bQB7JW87bMIUa.bdc37d355bdc37c21f8fd93c5fd629a0de8ec8fb819be4425bd8bb111fcc783c';
+  const BASE_ID = 'appWYK7qd4SzxKyli';
+  const TABLE_NAME = 'Bookings';
+
+  // FIX: slots now match Airtable's "8:00 AM - 8:30 AM" format
+  const ALL_SLOTS = [
+    '8:00 AM - 8:30 AM',
+    '8:30 AM - 9:00 AM',
+    '9:00 AM - 9:30 AM',
+    '9:30 AM - 10:00 AM',
+    '10:00 AM - 10:30 AM',
+    '10:30 AM - 11:00 AM',
+    '11:00 AM - 11:30 AM',
+    '11:30 AM - 12:00 PM',
+    '12:00 PM - 12:30 PM',
+    '12:30 PM - 1:00 PM',
+    '1:00 PM - 1:30 PM',
+    '1:30 PM - 2:00 PM',
+    '2:00 PM - 2:30 PM',
+    '2:30 PM - 3:00 PM',
+    '3:00 PM - 3:30 PM',
+    '3:30 PM - 4:00 PM',
+    '4:00 PM - 4:30 PM',
+    '4:30 PM - 5:00 PM'
+  ];
+
+  const SCHEDULES = ['Schedule A', 'Schedule B'];
+
+  // ─── STATE ────────────────────────────────────────────────────────────
+  let approvedBookings = [];
+  let pendingBookings = [];
+  let currentMonth = new Date().getMonth();
+  let currentYear = new Date().getFullYear();
+  let selectedDate = null;
+  let selectedSlot = null;
+  let selectedSchedule = null;
+
+  // ─── FETCH ────────────────────────────────────────────────────────────
+  async function fetchBookings() {
+    try {
+      // Fetch approved
+      approvedBookings = await fetchByStatus('Approved');
+      // Fetch pending
+      pendingBookings = await fetchByStatus('Pending');
+      renderCalendar();
+    } catch (e) {
+      document.getElementById('dates-grid').innerHTML =
+        `<div class="error-state" style="grid-column:1/-1">
+          Unable to load availability. Please try refreshing or contact us directly.
+        </div>`;
+    }
+  }
+
+  async function fetchByStatus(status) {
+    const filter = encodeURIComponent(`{Status} = '${status}'`);
+    let url = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?filterByFormula=${filter}`;
+    let allRecords = [];
+    while (url) {
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+      if (!res.ok) throw new Error('Fetch failed');
+      const data = await res.json();
+      allRecords = allRecords.concat(data.records.map(r => r.fields));
+      url = data.offset
+        ? `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?filterByFormula=${filter}&offset=${data.offset}`
+        : null;
+    }
+    return allRecords;
+  }
+
+  // ─── GET SLOTS FOR DATE ───────────────────────────────────────────────
+  // Returns { 'Schedule A': ['8:00 AM - 8:30 AM', ...], 'Schedule B': [...] }
+  function getSlotsForDate(bookings, dateStr) {
+    const result = { 'Schedule A': [], 'Schedule B': [] };
+    bookings.forEach(b => {
+      // FIX: use Preferred Date field for date matching
+      const raw = b['Preferred Date'];
+      if (!raw) return;
+      const bookingDate = raw.substring(0, 10);
+      if (bookingDate !== dateStr) return;
+      // FIX: use Assigned Schedule Set (not Assigned Schedule)
+      const schedule = b['Assigned Schedule Set'];
+      const time = b['Preferred Time'];
+      if (schedule && time && result[schedule] !== undefined) {
+        result[schedule].push(time);
+      }
+    });
+    return result;
+  }
+
+  // ─── IS DATE FULLY BOOKED ─────────────────────────────────────────────
+  function isDateFullyBooked(dateStr) {
+    const approved = getSlotsForDate(approvedBookings, dateStr);
+    return SCHEDULES.every(s => approved[s].length >= ALL_SLOTS.length);
+  }
+
+  // ─── RENDER CALENDAR ──────────────────────────────────────────────────
+  function renderCalendar() {
+    const months = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+    document.getElementById('cal-month-label').textContent = `${months[currentMonth]} ${currentYear}`;
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const daysInPrev = new Date(currentYear, currentMonth, 0).getDate();
+
+    let html = '';
+    for (let i = firstDay - 1; i >= 0; i--) {
+      html += `<div class="date-cell">${daysInPrev - i}</div>`;
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateObj = new Date(currentYear, currentMonth, d);
+      dateObj.setHours(0,0,0,0);
+      const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const isPast = dateObj < today;
+      const isToday = dateObj.getTime() === today.getTime();
+      const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+      const isSelected = selectedDate === dateStr;
+
+      let cls = 'date-cell current-month';
+      let click = '';
+
+      if (isPast) {
+        cls += ' past';
+      } else if (isWeekend) {
+        cls += ' weekend';
+      } else {
+        if (isDateFullyBooked(dateStr)) {
+          cls += ' fully-booked';
+        } else {
+          cls += ' available';
+          click = `onclick="selectDate('${dateStr}')"`;
+        }
+        if (isToday) cls += ' today';
+      }
+
+      if (isSelected) cls += ' selected';
+      html += `<div class="${cls}" ${click}>${d}</div>`;
+    }
+
+    const totalCells = firstDay + daysInMonth;
+    const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+    for (let i = 1; i <= remaining; i++) {
+      html += `<div class="date-cell">${i}</div>`;
+    }
+
+    document.getElementById('dates-grid').innerHTML = html;
+  }
+
+  function changeMonth(dir) {
+    currentMonth += dir;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    renderCalendar();
+  }
+
+  // ─── SELECT DATE ──────────────────────────────────────────────────────
+  function selectDate(dateStr) {
+    selectedDate = dateStr;
+    selectedSlot = null;
+    selectedSchedule = null;
+    renderCalendar();
+    clearSelection(false);
+
+    const approved = getSlotsForDate(approvedBookings, dateStr);
+    const pending  = getSlotsForDate(pendingBookings, dateStr);
+
+    const dateObj = new Date(dateStr + 'T00:00:00');
+    const formatted = dateObj.toLocaleDateString('en-PH', {
+      weekday:'long', month:'long', day:'numeric', year:'numeric'
+    });
+    document.getElementById('slots-date-title').textContent = formatted;
+
+    let html = '';
+    SCHEDULES.forEach(schedule => {
+      const takenSlots   = approved[schedule] || [];
+      const pendingSlots = pending[schedule]  || [];
+      html += `<div class="schedule-block">`;
+      html += `<div class="schedule-label">${schedule}</div>`;
+
+      const allTaken = takenSlots.length >= ALL_SLOTS.length;
+      if (allTaken) {
+        html += `<div class="slots-grid"><span class="all-taken">All slots for ${schedule} are fully booked.</span></div>`;
+      } else {
+        html += `<div class="slots-grid">`;
+        ALL_SLOTS.forEach(slot => {
+          const isTaken   = takenSlots.includes(slot);
+          const isPending = pendingSlots.includes(slot);
+          if (isTaken) {
+            html += `<button class="slot-btn taken" disabled title="Already approved">${slot}</button>`;
+          } else if (isPending) {
+            // Yellow — pending, still bookable
+            html += `<button class="slot-btn pending" onclick="selectSlot('${slot}','${schedule}',this)" title="Someone has a pending request for this slot">${slot} ⏳</button>`;
+          } else {
+            html += `<button class="slot-btn" onclick="selectSlot('${slot}','${schedule}',this)">${slot}</button>`;
+          }
+        });
+        html += `</div>`;
+      }
+      html += `</div>`;
+    });
+
+    document.getElementById('slots-content').innerHTML = html;
+    const s = document.getElementById('slots-section');
+    s.classList.add('visible');
+    setTimeout(() => s.scrollIntoView({ behavior:'smooth', block:'nearest' }), 100);
+    hideForm();
+  }
+
+  // ─── SELECT SLOT ──────────────────────────────────────────────────────
+  function selectSlot(slot, schedule, btn) {
+    selectedSlot = slot;
+    selectedSchedule = schedule;
+    document.querySelectorAll('.slot-btn:not(.taken)').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+
+    const dateObj = new Date(selectedDate + 'T00:00:00');
+    const dateFormatted = dateObj.toLocaleDateString('en-PH', {
+      weekday: 'long', month:'long', day:'numeric', year:'numeric'
+    });
+
+    const summaryText = `${dateFormatted} — ${slot} (${schedule})`;
+    document.getElementById('summary-text').textContent = summaryText;
+    document.getElementById('selection-summary').classList.add('visible');
+
+    // Update suggestion banner
+    document.getElementById('suggestion-text').textContent = `${dateFormatted}, ${slot} (${schedule})`;
+
+    document.getElementById('step1-indicator').classList.remove('active');
+    document.getElementById('step1-indicator').classList.add('done');
+    document.getElementById('step2-indicator').classList.add('active');
+    showForm();
+  }
+
+  // ─── CLEAR / SHOW / HIDE ──────────────────────────────────────────────
+  function clearSelection(resetDate = true) {
+    selectedSlot = null;
+    selectedSchedule = null;
+    document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('selection-summary').classList.remove('visible');
+    hideForm();
+    if (resetDate) {
+      selectedDate = null;
+      renderCalendar();
+      document.getElementById('step1-indicator').classList.add('active');
+      document.getElementById('step1-indicator').classList.remove('done');
+      document.getElementById('step2-indicator').classList.remove('active');
+    }
+  }
+
+  function showForm() {
+    const layout = document.getElementById('booking-layout');
+    layout.classList.remove('form-hidden');
+    const f = document.getElementById('step2');
+    f.classList.add('visible');
+    // On mobile, scroll to form; on desktop, it appears beside
+    if (window.innerWidth <= 768) {
+      setTimeout(() => f.scrollIntoView({ behavior:'smooth', block:'start' }), 200);
+    }
+  }
+
+  function hideForm() {
+    const layout = document.getElementById('booking-layout');
+    layout.classList.add('form-hidden');
+    document.getElementById('step2').classList.remove('visible');
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────────────────
+  fetchBookings();
+</script>
+
+</body>
+</html>
