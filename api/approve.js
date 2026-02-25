@@ -143,7 +143,6 @@ export default async function handler(req, res) {
         'Confirmed Date and Time': confirmedDateTime,
         'Schedule Set': scheduleSet,
         'Status': 'Approved',
-        'Admin Notes': `Auto-blocked — successive slot for booking ${recordId}`
       };
       const newRecord = await createBlockerRecord(blockerFields);
       created.push(newRecord.id);
