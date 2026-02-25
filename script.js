@@ -1,6 +1,6 @@
 
   // ─── CONFIG ───────────────────────────────────────────────────────────
-  const AIRTABLE_TOKEN = 'patA6vShT7QWXeHNP.7fc3261741e88ee1abe8f20bed6b426d6ce2f29793f326caa8b25ad364be6c30';
+  const AIRTABLE_TOKEN = 'patJoBi4AkOMALUqO.9c9eebc601030b7f23aa6f38425249e9f002a5d863aaa2e1af036d9d0dab2fdf';
   const BASE_ID = 'appWkg00ZKh2UmL6V';
   const TABLE_NAME = 'Bookings';
 
