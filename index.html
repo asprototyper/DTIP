@@ -553,11 +553,10 @@
 
 <script>
   // ─── CONFIG ───────────────────────────────────────────────────────────
-  const AIRTABLE_TOKEN = 'patjy2vtiKj1YNRak.e18a069de589d40023082098feccf33c4399e70210745f1b064709494d93688e';
+  const AIRTABLE_TOKEN = 'pat2bQB7JW87bMIUa.bdc37d355bdc37c21f8fd93c5fd629a0de8ec8fb819be4425bd8bb111fcc783c';
   const BASE_ID = 'appWkg00ZKh2UmL6V';
   const TABLE_NAME = 'Bookings';
 
-  // FIX: slots now match Airtable's "8:00 AM - 8:30 AM" format
   const ALL_SLOTS = [
     '8:00 AM - 8:30 AM',
     '8:30 AM - 9:00 AM',
@@ -627,13 +626,11 @@
   function getSlotsForDate(bookings, dateStr) {
     const result = { 'Schedule A': [], 'Schedule B': [] };
     bookings.forEach(b => {
-      // FIX: use Preferred Date field for date matching
       const raw = b['Preferred Date'];
       if (!raw) return;
       const bookingDate = raw.substring(0, 10);
       if (bookingDate !== dateStr) return;
-      // FIX: use Assigned Schedule Set (not Assigned Schedule)
-      const schedule = b['Assigned Schedule Set'];
+      const schedule = b['Schedule Set'];
       const time = b['Preferred Time'];
       if (schedule && time && result[schedule] !== undefined) {
         result[schedule].push(time);
