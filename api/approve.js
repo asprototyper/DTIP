@@ -103,7 +103,7 @@ export default async function handler(req, res) {
     const record = await getRecord(recordId);
     const fields = record.fields;
 
-    const confirmedDateTime = fields['Confirmed Date & Time'];
+    const confirmedDateTime = fields['Confirmed Date and Time'];
     const duration = fields['Calculated Duration'];
     const scheduleSet = fields['Schedule Set'];
     const name = fields['Name'];
@@ -112,7 +112,7 @@ export default async function handler(req, res) {
 
     if (!confirmedDateTime || !duration || !scheduleSet) {
       return res.status(400).json({
-        error: 'Missing required fields: Confirmed Date & Time, Calculated Duration, or Schedule Set'
+        error: 'Missing required fields: Confirmed Date and Time, Calculated Duration, or Schedule Set'
       });
     }
 
@@ -141,7 +141,7 @@ export default async function handler(req, res) {
         'Email': email,
         'Preferred Date': preferredDate,
         'Preferred Time': slot,
-        'Confirmed Date & Time': confirmedDateTime, // same confirmed datetime as parent
+        'Confirmed Date and Time': confirmedDateTime, // same confirmed datetime as parent
         'Schedule Set': scheduleSet,
         'Status': 'Approved',
         'Admin Notes': `Auto-blocked — successive slot for booking ${recordId}`
