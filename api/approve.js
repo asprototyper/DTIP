@@ -23,25 +23,26 @@ const ALL_SLOTS = [
   '4:30 PM - 5:00 PM'
 ];
 
-// Parse "8:00 AM - 8:30 AM" → starting slot index in ALL_SLOTS
-function getSlotIndex(preferredTime) {
-  return ALL_SLOTS.findIndex(s => s === preferredTime);
+function getSlotIndex(slot) {
+  return ALL_SLOTS.findIndex(s => s === slot);
 }
 
-// Calculate how many 30-min slots the duration needs
+// Handles both number (90) and string ("90 mins", "90 min", "90")
+function parseDuration(raw) {
+  if (typeof raw === 'number') return raw;
+  if (typeof raw === 'string') return parseInt(raw);
+  return 0;
+}
+
 function getSlotsNeeded(durationMinutes) {
   return Math.ceil(durationMinutes / 30);
 }
 
-// Get confirmed date as YYYY-MM-DD string (Asia/Manila)
 function getConfirmedDate(confirmedDateTime) {
   const date = new Date(confirmedDateTime);
-  // Convert to Manila time
-  const manilaStr = date.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
-  return manilaStr; // returns YYYY-MM-DD
+  return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
 }
 
-// Get confirmed start time slot string e.g. "8:00 AM - 8:30 AM"
 function getConfirmedStartSlot(confirmedDateTime) {
   const date = new Date(confirmedDateTime);
   const timeStr = date.toLocaleTimeString('en-US', {
@@ -49,13 +50,10 @@ function getConfirmedStartSlot(confirmedDateTime) {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true
-  }); // e.g. "8:00 AM"
-
-  // Find matching slot that starts with this time
+  });
   return ALL_SLOTS.find(s => s.startsWith(timeStr)) || null;
 }
 
-// Fetch a single Airtable record by ID
 async function getRecord(recordId) {
   const res = await fetch(
     `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}/${recordId}`,
@@ -65,7 +63,6 @@ async function getRecord(recordId) {
   return res.json();
 }
 
-// Create a blocker record in Airtable
 async function createBlockerRecord(fields) {
   const res = await fetch(
     `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`,
@@ -85,9 +82,7 @@ async function createBlockerRecord(fields) {
   return res.json();
 }
 
-// ─── MAIN HANDLER ─────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
-  // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -99,41 +94,45 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing recordId' });
     }
 
-    // 1. Fetch the approved booking from Airtable
     const record = await getRecord(recordId);
     const fields = record.fields;
 
     const confirmedDateTime = fields['Confirmed Date and Time'];
-    const duration = fields['Calculated Duration'];
+    const rawDuration = fields['Calculated Duration'];
+    const duration = parseDuration(rawDuration);
     const scheduleSet = fields['Schedule Set'];
     const name = fields['Name'];
     const email = fields['Email'];
     const preferredDate = fields['Preferred Date'];
 
-    if (!confirmedDateTime || !duration || !scheduleSet) {
+    if (!confirmedDateTime || !rawDuration || !scheduleSet) {
       return res.status(400).json({
-        error: 'Missing required fields: Confirmed Date and Time, Calculated Duration, or Schedule Set'
+        error: 'Missing required fields: Confirmed Date and Time, Calculated Duration, or Schedule Set',
+        debug: { confirmedDateTime, rawDuration, scheduleSet }
       });
     }
 
-    // 2. Figure out starting slot and how many slots needed
     const startSlot = getConfirmedStartSlot(confirmedDateTime);
-    const confirmedDate = getConfirmedDate(confirmedDateTime);
     const slotsNeeded = getSlotsNeeded(duration);
     const startIndex = getSlotIndex(startSlot);
 
     if (startIndex === -1) {
-      return res.status(400).json({ error: `Could not find slot matching: ${startSlot}` });
+      return res.status(400).json({
+        error: `Could not find slot matching confirmed time`,
+        debug: { confirmedDateTime, startSlot, slotsNeeded }
+      });
     }
 
-    // 3. The first slot is already the main booking — create blockers for the REST
     const blockerSlots = ALL_SLOTS.slice(startIndex + 1, startIndex + slotsNeeded);
 
     if (blockerSlots.length === 0) {
-      return res.status(200).json({ message: 'No successive slots needed', slotsCreated: 0 });
+      return res.status(200).json({
+        message: 'No successive slots needed',
+        slotsCreated: 0,
+        debug: { startSlot, duration, slotsNeeded, startIndex }
+      });
     }
 
-    // 4. Create a blocker record for each successive slot
     const created = [];
     for (const slot of blockerSlots) {
       const blockerFields = {
@@ -141,7 +140,7 @@ export default async function handler(req, res) {
         'Email': email,
         'Preferred Date': preferredDate,
         'Preferred Time': slot,
-        'Confirmed Date and Time': confirmedDateTime, // same confirmed datetime as parent
+        'Confirmed Date and Time': confirmedDateTime,
         'Schedule Set': scheduleSet,
         'Status': 'Approved',
         'Admin Notes': `Auto-blocked — successive slot for booking ${recordId}`
