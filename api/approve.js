@@ -38,20 +38,19 @@ function getSlotsNeeded(durationMinutes) {
   return Math.ceil(durationMinutes / 30);
 }
 
-function getConfirmedDate(confirmedDateTime) {
-  const date = new Date(confirmedDateTime);
-  return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+function getConfirmedStartSlot(confirmedDateTime) {
+  // Extract time part directly from string "2026-02-27T10:00:00"
+  const timePart = confirmedDateTime.split('T')[1]; // "10:00:00"
+  const [hours, minutes] = timePart.split(':');
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  const timeStr = `${hour12}:${minutes} ${ampm}`; // "10:00 AM"
+  return ALL_SLOTS.find(s => s.startsWith(timeStr)) || null;
 }
 
-function getConfirmedStartSlot(confirmedDateTime) {
-  const date = new Date(confirmedDateTime);
-  const timeStr = date.toLocaleTimeString('en-US', {
-    timeZone: 'Asia/Manila',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
-  return ALL_SLOTS.find(s => s.startsWith(timeStr)) || null;
+function getConfirmedDate(confirmedDateTime) {
+  return confirmedDateTime.split('T')[0]; // "2026-02-27"
 }
 
 async function getRecord(recordId) {
