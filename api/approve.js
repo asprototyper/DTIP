@@ -27,7 +27,6 @@ function getSlotIndex(slot) {
   return ALL_SLOTS.findIndex(s => s === slot);
 }
 
-// Handles both number (90) and string ("90 mins", "90 min", "90")
 function parseDuration(raw) {
   if (typeof raw === 'number') return raw;
   if (typeof raw === 'string') return parseInt(raw);
@@ -39,18 +38,17 @@ function getSlotsNeeded(durationMinutes) {
 }
 
 function getConfirmedStartSlot(confirmedDateTime) {
-  // Extract time part directly from string "2026-02-27T10:00:00"
-  const timePart = confirmedDateTime.split('T')[1]; // "10:00:00"
+  const timePart = confirmedDateTime.split('T')[1];
   const [hours, minutes] = timePart.split(':');
   const hour = parseInt(hours);
   const ampm = hour >= 12 ? 'PM' : 'AM';
   const hour12 = hour % 12 || 12;
-  const timeStr = `${hour12}:${minutes} ${ampm}`; // "10:00 AM"
+  const timeStr = `${hour12}:${minutes} ${ampm}`;
   return ALL_SLOTS.find(s => s.startsWith(timeStr)) || null;
 }
 
 function getConfirmedDate(confirmedDateTime) {
-  return confirmedDateTime.split('T')[0]; // "2026-02-27"
+  return confirmedDateTime.split('T')[0];
 }
 
 async function getRecord(recordId) {
@@ -142,6 +140,8 @@ export default async function handler(req, res) {
         'Confirmed Date and Time': confirmedDateTime,
         'Schedule Set': scheduleSet,
         'Status': 'Approved',
+        'Notified': true,
+       
       };
       const newRecord = await createBlockerRecord(blockerFields);
       created.push(newRecord.id);
