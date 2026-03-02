@@ -55,8 +55,26 @@
     return data.records;
   }
 
+  // ─── PARSE DURATION ───────────────────────────────────────────────────
+  function parseDuration(raw) {
+    if (typeof raw === 'number') return raw;
+    if (typeof raw === 'string') return parseInt(raw) || 0;
+    return 0;
+  }
+
+  // ─── EXPAND SLOTS BASED ON DURATION ──────────────────────────────────
+  // Given a start slot and duration, returns all slots that would be blocked
+  function getExpandedSlots(startSlot, durationMinutes) {
+    const startIndex = ALL_SLOTS.findIndex(s => s === startSlot);
+    if (startIndex === -1) return [startSlot];
+    const slotsNeeded = Math.ceil(durationMinutes / 30);
+    return ALL_SLOTS.slice(startIndex, startIndex + slotsNeeded);
+  }
+
   // ─── GET SLOTS FOR DATE ───────────────────────────────────────────────
-  function getSlotsForDate(bookings, dateStr) {
+  // For approved: just return the booked slot (blocker records already exist as separate rows)
+  // For pending: expand slots based on Calculated Duration
+  function getSlotsForDate(bookings, dateStr, expandByDuration = false) {
     const result = { 'Schedule A': [], 'Schedule B': [] };
     bookings.forEach(b => {
       const raw = b['Preferred Date'];
@@ -65,8 +83,20 @@
       if (bookingDate !== dateStr) return;
       const schedule = b['Schedule Set'];
       const time = b['Preferred Time'];
-      if (schedule && time && result[schedule] !== undefined) {
-        result[schedule].push(time);
+      if (!schedule || !time || result[schedule] === undefined) return;
+
+      if (expandByDuration) {
+        const duration = parseDuration(b['Calculated Duration']);
+        const expanded = getExpandedSlots(time, duration);
+        expanded.forEach(slot => {
+          if (!result[schedule].includes(slot)) {
+            result[schedule].push(slot);
+          }
+        });
+      } else {
+        if (!result[schedule].includes(time)) {
+          result[schedule].push(time);
+        }
       }
     });
     return result;
@@ -148,8 +178,9 @@
     renderCalendar();
     clearSelection(false);
 
-    const approved = getSlotsForDate(approvedBookings, dateStr);
-    const pending  = getSlotsForDate(pendingBookings, dateStr);
+    const approved = getSlotsForDate(approvedBookings, dateStr, false);
+    // Expand pending slots based on duration
+    const pending  = getSlotsForDate(pendingBookings, dateStr, true);
 
     const dateObj = new Date(dateStr + 'T00:00:00');
     const formatted = dateObj.toLocaleDateString('en-PH', {
@@ -175,7 +206,7 @@
           if (isTaken) {
             html += `<button class="slot-btn taken" disabled title="Already approved">${slot}</button>`;
           } else if (isPending) {
-            html += `<button class="slot-btn pending" onclick="selectSlot('${slot}','${schedule}',this)" title="Someone has a pending request for this slot">${slot} ⏳</button>`;
+            html += `<button class="slot-btn pending" onclick="selectSlot('${slot}','${schedule}',this)" title="Someone has a pending request that may block this slot">${slot} ⏳</button>`;
           } else {
             html += `<button class="slot-btn" onclick="selectSlot('${slot}','${schedule}',this)">${slot}</button>`;
           }
