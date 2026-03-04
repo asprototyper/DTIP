@@ -24,6 +24,7 @@ async function fetchBookings() {
     approvedBookings = await fetchByStatus('Approved');
     pendingBookings = await fetchByStatus('Pending');
     renderCalendar();
+    renderSlots(); // render slots after data loads
   } catch (e) {
     document.getElementById('dates-grid').innerHTML =
       `<div class="error-state" style="grid-column:1/-1">
@@ -46,7 +47,7 @@ function parseDuration(raw) {
   return 0;
 }
 
-// ─── GET EXPANDED SLOTS BASED ON DURATION ────────────────────────────
+// ─── GET EXPANDED SLOTS ───────────────────────────────────────────────
 function getExpandedSlots(startSlot, durationMinutes) {
   const startIndex = ALL_SLOTS.findIndex(s => s === startSlot);
   if (startIndex === -1) return [startSlot];
@@ -55,21 +56,18 @@ function getExpandedSlots(startSlot, durationMinutes) {
 }
 
 // ─── GET SLOTS FOR DATE ───────────────────────────────────────────────
-// expandByDuration: true for pending (show all slots that would be blocked)
 function getSlotsForDate(bookings, dateStr, expandByDuration = false) {
   const taken = [];
   bookings.forEach(b => {
     const raw = b['Preferred Date'];
     if (!raw) return;
-    const bookingDate = raw.substring(0, 10);
-    if (bookingDate !== dateStr) return;
+    if (raw.substring(0, 10) !== dateStr) return;
     const time = b['Preferred Time'];
     if (!time) return;
 
     if (expandByDuration) {
       const duration = parseDuration(b['Calculated Duration']);
-      const expanded = getExpandedSlots(time, duration);
-      expanded.forEach(slot => {
+      getExpandedSlots(time, duration).forEach(slot => {
         if (!taken.includes(slot)) taken.push(slot);
       });
     } else {
@@ -81,8 +79,43 @@ function getSlotsForDate(bookings, dateStr, expandByDuration = false) {
 
 // ─── IS DATE FULLY BOOKED ─────────────────────────────────────────────
 function isDateFullyBooked(dateStr) {
-  const approved = getSlotsForDate(approvedBookings, dateStr, false);
-  return approved.length >= ALL_SLOTS.length;
+  return getSlotsForDate(approvedBookings, dateStr, false).length >= ALL_SLOTS.length;
+}
+
+// ─── RENDER SLOTS ─────────────────────────────────────────────────────
+// Always shows all slots. If no date selected, all are greyed out.
+function renderSlots() {
+  const takenSlots   = selectedDate ? getSlotsForDate(approvedBookings, selectedDate, false) : [];
+  const pendingSlots = selectedDate ? getSlotsForDate(pendingBookings, selectedDate, true) : [];
+
+  // Update date title
+  if (selectedDate) {
+    const dateObj = new Date(selectedDate + 'T00:00:00');
+    document.getElementById('slots-date-title').textContent = dateObj.toLocaleDateString('en-PH', {
+      weekday: 'short', month: 'short', day: 'numeric'
+    });
+  } else {
+    document.getElementById('slots-date-title').textContent = '—';
+  }
+
+  let html = '';
+  ALL_SLOTS.forEach(slot => {
+    const isTaken   = takenSlots.includes(slot);
+    const isPending = pendingSlots.includes(slot);
+    const noDate    = !selectedDate;
+
+    if (noDate) {
+      html += `<button class="slot-btn" disabled style="opacity:0.35;cursor:not-allowed;">${slot}</button>`;
+    } else if (isTaken) {
+      html += `<button class="slot-btn taken" disabled title="Already approved">${slot}</button>`;
+    } else if (isPending) {
+      html += `<button class="slot-btn pending" onclick="selectSlot('${slot}',this)" title="Pending request may block this slot">${slot} ⏳</button>`;
+    } else {
+      html += `<button class="slot-btn" onclick="selectSlot('${slot}',this)">${slot}</button>`;
+    }
+  });
+
+  document.getElementById('slots-content').innerHTML = html;
 }
 
 // ─── RENDER CALENDAR ──────────────────────────────────────────────────
@@ -151,44 +184,9 @@ function changeMonth(dir) {
 function selectDate(dateStr) {
   selectedDate = dateStr;
   selectedSlot = null;
+  document.getElementById('selection-summary').classList.remove('visible');
   renderCalendar();
-  clearSelection(false);
-
-  const takenSlots   = getSlotsForDate(approvedBookings, dateStr, false);
-  const pendingSlots = getSlotsForDate(pendingBookings, dateStr, true);
-
-  const dateObj = new Date(dateStr + 'T00:00:00');
-  const formatted = dateObj.toLocaleDateString('en-PH', {
-    weekday:'long', month:'long', day:'numeric', year:'numeric'
-  });
-  document.getElementById('slots-date-title').textContent = formatted;
-
-  const allTaken = takenSlots.length >= ALL_SLOTS.length;
-  let html = '';
-
-  if (allTaken) {
-    html = `<span class="all-taken">All slots for this date are fully booked.</span>`;
-  } else {
-    html = `<div class="slots-grid">`;
-    ALL_SLOTS.forEach(slot => {
-      const isTaken   = takenSlots.includes(slot);
-      const isPending = pendingSlots.includes(slot);
-      if (isTaken) {
-        html += `<button class="slot-btn taken" disabled title="Already approved">${slot}</button>`;
-      } else if (isPending) {
-        html += `<button class="slot-btn pending" onclick="selectSlot('${slot}',this)" title="Someone has a pending request that may block this slot">${slot} ⏳</button>`;
-      } else {
-        html += `<button class="slot-btn" onclick="selectSlot('${slot}',this)">${slot}</button>`;
-      }
-    });
-    html += `</div>`;
-  }
-
-  document.getElementById('slots-content').innerHTML = html;
-  const s = document.getElementById('slots-section');
-  s.classList.add('visible');
-  setTimeout(() => s.scrollIntoView({ behavior:'smooth', block:'nearest' }), 100);
-  hideForm();
+  renderSlots();
 }
 
 // ─── SELECT SLOT ──────────────────────────────────────────────────────
@@ -199,50 +197,26 @@ function selectSlot(slot, btn) {
 
   const dateObj = new Date(selectedDate + 'T00:00:00');
   const dateFormatted = dateObj.toLocaleDateString('en-PH', {
-    weekday: 'long', month:'long', day:'numeric', year:'numeric'
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
   });
 
-  const summaryText = `${dateFormatted} — ${slot}`;
-  document.getElementById('summary-text').textContent = summaryText;
+  document.getElementById('summary-text').textContent = `${dateFormatted} — ${slot}`;
   document.getElementById('selection-summary').classList.add('visible');
-  document.getElementById('suggestion-text').textContent = `${dateFormatted}, ${slot}`;
 
-  document.getElementById('step1-indicator').classList.remove('active');
-  document.getElementById('step1-indicator').classList.add('done');
-  document.getElementById('step2-indicator').classList.add('active');
-  showForm();
+  const banner = document.getElementById('suggestion-banner');
+  banner.style.display = 'block';
+  document.getElementById('suggestion-text').textContent = `${dateFormatted}, ${slot}`;
 }
 
-// ─── CLEAR / SHOW / HIDE ──────────────────────────────────────────────
-function clearSelection(resetDate = true) {
+// ─── CLEAR ────────────────────────────────────────────────────────────
+function clearSelection() {
   selectedSlot = null;
   document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
   document.getElementById('selection-summary').classList.remove('visible');
-  hideForm();
-  if (resetDate) {
-    selectedDate = null;
-    renderCalendar();
-    document.getElementById('step1-indicator').classList.add('active');
-    document.getElementById('step1-indicator').classList.remove('done');
-    document.getElementById('step2-indicator').classList.remove('active');
-  }
-}
-
-function showForm() {
-  const layout = document.getElementById('booking-layout');
-  layout.classList.remove('form-hidden');
-  const f = document.getElementById('step2');
-  f.classList.add('visible');
-  if (window.innerWidth <= 768) {
-    setTimeout(() => f.scrollIntoView({ behavior:'smooth', block:'start' }), 200);
-  }
-}
-
-function hideForm() {
-  const layout = document.getElementById('booking-layout');
-  layout.classList.add('form-hidden');
-  document.getElementById('step2').classList.remove('visible');
+  document.getElementById('suggestion-banner').style.display = 'none';
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────
+// Show greyed slots immediately while data loads
+renderSlots();
 fetchBookings();

@@ -9,6 +9,89 @@
     rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="style2.css">
+  <style>
+    .booking-layout {
+      display: grid;
+      grid-template-columns: 2fr 15rem 35%;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    /* Sticky columns */
+    .left-col, .slots-col, .tally-col {
+      position: sticky;
+      top: 1.5rem;
+    }
+
+    /* Slots column */
+    .slots-col .slots-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      margin-top: 0.8rem;
+    }
+
+    .slots-col .slot-btn {
+      width: 100%;
+      text-align: left;
+      font-size: 0.82rem;
+      padding: 0.55rem 0.8rem;
+    }
+
+    /* Tally form */
+    .tally-wrapper {
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .tally-wrapper iframe {
+      width: 100%;
+      border: none;
+      display: block;
+    }
+
+    .selection-summary {
+      margin-top: 1rem;
+      padding: 0.75rem 0.9rem;
+      background: var(--accent-light);
+      border-radius: 8px;
+      border: 1px solid #c5ddc9;
+      font-size: 0.8rem;
+      color: var(--accent);
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .selection-summary.visible { display: flex; }
+
+    .suggestion-banner {
+      padding: 0.85rem 1rem;
+      background: var(--accent-light);
+      border: 1px solid #c5ddc9;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      font-size: 0.82rem;
+      color: var(--accent);
+      line-height: 1.5;
+    }
+    .suggestion-banner strong { display: block; font-weight: 500; margin-bottom: 0.2rem; }
+    .suggestion-banner .suggestion-note { font-size: 0.76rem; color: #4a7a5a; margin-top: 0.3rem; font-style: italic; }
+
+    .slots-loading {
+      font-size: 0.82rem;
+      color: var(--gray-400);
+      padding: 0.5rem 0;
+    }
+
+    @media (max-width: 900px) {
+      .booking-layout { grid-template-columns: 1fr !important; }
+      .left-col, .slots-col, .tally-col { position: static; }
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 
 <body>
@@ -31,25 +114,24 @@
     <div class="steps">
       <div class="step active" id="step1-indicator">
         <div class="step-num">1</div>
-        <span>Choose a time</span>
+        <span>Choose a date & time</span>
       </div>
       <div class="step-line"></div>
-      <div class="step" id="step2-indicator">
+      <div class="step active" id="step2-indicator">
         <div class="step-num">2</div>
-        <span>Your details</span>
+        <span>Fill in your details</span>
       </div>
     </div>
 
-    <!-- BOOKING LAYOUT: left = calendar+slots, right = form -->
-    <div class="booking-layout form-hidden" id="booking-layout">
+    <div class="booking-layout" id="booking-layout">
 
-      <!-- LEFT COLUMN -->
+      <!-- COL 1: Calendar -->
       <div class="left-col">
         <p class="section-label">Step 1</p>
-        <h2 class="section-title">Select an available date</h2>
-        <p class="section-sub">Green dates have open slots. Yellow slots have pending requests from others.</p>
+        <h2 class="section-title">Select a date</h2>
+        <p class="section-sub" style="margin-bottom:0.8rem;">Green dates have open slots.</p>
 
-        <div class="notice">
+        <div class="notice" style="font-size:0.8rem;">
           ⓘ All appointments are subject to admin approval. Your preferred time will be reviewed and confirmed via email.
         </div>
 
@@ -72,53 +154,49 @@
               <div class="day-label">Sat</div>
             </div>
             <div class="dates-grid" id="dates-grid">
-              <div class="loading-state"
-                style="grid-column:1/-1; text-align:center; padding:2rem; color:#a0a09a; font-size:0.9rem;">
-                <div
-                  style="width:20px;height:20px;border:2px solid #e8e8e4;border-top-color:#2d5a3d;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 1rem;">
-                </div>
-                Loading availability…
+              <div style="grid-column:1/-1; text-align:center; padding:2rem; color:#a0a09a; font-size:0.85rem;">
+                <div style="width:18px;height:18px;border:2px solid #e8e8e4;border-top-color:#2d5a3d;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 0.8rem;"></div>
+                Loading…
               </div>
             </div>
           </div>
         </div>
 
-        <div class="legend">
+        <div class="legend" style="margin-top:0.8rem;">
           <div class="legend-item"><div class="legend-dot available"></div> Available</div>
-          <div class="legend-item"><div class="legend-dot pending"></div> Has pending requests</div>
+          <div class="legend-item"><div class="legend-dot pending"></div> Has pending</div>
           <div class="legend-item"><div class="legend-dot full"></div> Fully booked</div>
           <div class="legend-item"><div class="legend-dot unavailable"></div> Unavailable</div>
         </div>
+      </div>
 
-        <!-- SLOTS -->
-        <div class="slots-section" id="slots-section">
-          <hr style="border:none;border-top:1px solid var(--gray-200);margin:1.8rem 0 1.3rem">
-          <h3 class="slots-date-title" id="slots-date-title"></h3>
-          <p class="slots-subtitle">
-            🟡 Yellow = someone else has a pending request for this slot (still bookable)<br>
-            ~~Strikethrough~~ = approved and unavailable
-          </p>
-          <div id="slots-content"></div>
-          <div class="selection-summary" id="selection-summary">
-            <span>Selected: <strong id="summary-text"></strong></span>
-            <button class="clear-btn" onclick="clearSelection()">Clear</button>
-          </div>
+      <!-- COL 2: Slots (always visible) -->
+      <div class="slots-col">
+        <p class="section-label">Available Times</p>
+        <h2 class="section-title" id="slots-date-title" style="font-size:0.95rem; min-height:2.5rem;">—</h2>
+        <p id="slots-subtitle" style="font-size:0.76rem;color:var(--gray-600);margin-bottom:0.5rem;line-height:1.5;">
+          🟡 Pending &nbsp;|&nbsp; <s>Taken</s>
+        </p>
+
+        <div id="slots-content" class="slots-grid">
+          <!-- Slots rendered here immediately from ALL_SLOTS -->
+        </div>
+
+        <div class="selection-summary" id="selection-summary">
+          <span><strong id="summary-text"></strong></span>
+          <button class="clear-btn" onclick="clearSelection()">✕</button>
         </div>
       </div>
 
-      <!-- RIGHT COLUMN -->
-      <div class="right-col" id="step2">
-        <div class="right-col-header">
-          <p class="section-label">Step 2</p>
-          <h2 class="section-title">Fill in your details</h2>
-          <p class="section-sub" style="margin-bottom:1rem;">Complete the form below to submit your request.</p>
-        </div>
+      <!-- COL 3: Tally Form -->
+      <div class="tally-col">
+        <p class="section-label">Step 2</p>
+        <h2 class="section-title" style="margin-bottom:0.5rem;">Fill in your details</h2>
 
-        <!-- SUGGESTION BANNER -->
-        <div class="suggestion-banner" id="suggestion-banner">
-          <strong>📅 Your selected time</strong>
+        <div class="suggestion-banner" id="suggestion-banner" style="display:none;">
+          <strong>📅 Selected time</strong>
           <span id="suggestion-text">—</span>
-          <div class="suggestion-note">ℹ️ Please select this same date and time in the form below — the form does not auto-fill from your calendar selection.</div>
+          <div class="suggestion-note">ℹ️ Please select this same date and time in the form below.</div>
         </div>
 
         <div class="tally-wrapper">
@@ -129,13 +207,8 @@
         </div>
       </div>
 
-    </div><!-- end .booking-layout -->
-
+    </div>
   </div>
-
-  <style>
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
 
   <script>var d = document, w = "https://tally.so/widgets/embed.js", v = function () { "undefined" != typeof Tally ? Tally.loadEmbeds() : d.querySelectorAll("iframe[data-tally-src]:not([src])").forEach((function (e) { e.src = e.dataset.tallySrc })) }; if ("undefined" != typeof Tally) v(); else if (d.querySelector('script[src="' + w + '"]') == null) { var s = d.createElement("script"); s.src = w, s.onload = v, s.onerror = v, d.body.appendChild(s); }</script>
   <script src="script.js"></script>
