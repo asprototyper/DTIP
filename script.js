@@ -40,23 +40,8 @@ async function fetchByStatus(status) {
   return data.records;
 }
 
-// ─── PARSE DURATION ───────────────────────────────────────────────────
-function parseDuration(raw) {
-  if (typeof raw === 'number') return raw;
-  if (typeof raw === 'string') return parseInt(raw) || 0;
-  return 0;
-}
-
-// ─── GET EXPANDED SLOTS ───────────────────────────────────────────────
-function getExpandedSlots(startSlot, durationMinutes) {
-  const startIndex = ALL_SLOTS.findIndex(s => s === startSlot);
-  if (startIndex === -1) return [startSlot];
-  const slotsNeeded = Math.ceil(durationMinutes / 60);
-  return ALL_SLOTS.slice(startIndex, startIndex + slotsNeeded);
-}
-
 // ─── GET SLOTS FOR DATE ───────────────────────────────────────────────
-function getSlotsForDate(bookings, dateStr, expandByDuration = false) {
+function getSlotsForDate(bookings, dateStr) {
   const taken = [];
   bookings.forEach(b => {
     const raw = b['Preferred Date'];
@@ -64,29 +49,21 @@ function getSlotsForDate(bookings, dateStr, expandByDuration = false) {
     if (raw.substring(0, 10) !== dateStr) return;
     const time = b['Preferred Time'];
     if (!time) return;
-
-    if (expandByDuration) {
-      const duration = parseDuration(b['Calculated Duration']);
-      getExpandedSlots(time, duration).forEach(slot => {
-        if (!taken.includes(slot)) taken.push(slot);
-      });
-    } else {
-      if (!taken.includes(time)) taken.push(time);
-    }
+    if (!taken.includes(time)) taken.push(time);
   });
   return taken;
 }
 
 // ─── IS DATE FULLY BOOKED ─────────────────────────────────────────────
 function isDateFullyBooked(dateStr) {
-  return getSlotsForDate(approvedBookings, dateStr, false).length >= ALL_SLOTS.length;
+  return getSlotsForDate(approvedBookings, dateStr).length >= ALL_SLOTS.length;
 }
 
 // ─── RENDER SLOTS ─────────────────────────────────────────────────────
 // Always shows all slots. If no date selected, all are greyed out.
 function renderSlots() {
-  const takenSlots   = selectedDate ? getSlotsForDate(approvedBookings, selectedDate, false) : [];
-  const pendingSlots = selectedDate ? getSlotsForDate(pendingBookings, selectedDate, true) : [];
+  const takenSlots   = selectedDate ? getSlotsForDate(approvedBookings, selectedDate) : [];
+  const pendingSlots = selectedDate ? getSlotsForDate(pendingBookings, selectedDate) : [];
 
   // Update date title
   if (selectedDate) {
