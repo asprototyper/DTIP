@@ -9,8 +9,6 @@
     rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="style2.css">
-
-
 </head>
 
 <body>
@@ -22,17 +20,11 @@
     </div>
     <div class="right">
       <h1>NATIONAL TELECOMMUNICATIONS COMMISSION</h1>
-      <hr class="whiteline">
-      </hr>
-
+      <hr class="whiteline"></hr>
       <p>REPUBLIC OF THE PHILIPPINES</p>
       <span>DTIP Booking Portal</span>
     </div>
-
   </header>
-
-
-
 
   <div class="container">
 
@@ -56,11 +48,11 @@
         <p class="section-label">Step 1</p>
         <h2 class="section-title">Select an available date</h2>
         <p class="section-sub">Green dates have open slots. Yellow slots have pending requests from others.</p>
+
         <div class="notice">
-          ⓘ All appointments are subject to admin approval. Your preferred time will be reviewed and confirmed via
-          email.
+          ⓘ All appointments are subject to admin approval. Your preferred time will be reviewed and confirmed via email.
         </div>
-        <p class="section-sub">Please take in mind meeting duration when picking dates.</p>
+
         <div class="calendar-wrapper">
           <div class="calendar-header">
             <h3 id="cal-month-label">Loading...</h3>
@@ -92,18 +84,10 @@
         </div>
 
         <div class="legend">
-          <div class="legend-item">
-            <div class="legend-dot available"></div> Available
-          </div>
-          <div class="legend-item">
-            <div class="legend-dot pending"></div> Has pending requests
-          </div>
-          <div class="legend-item">
-            <div class="legend-dot full"></div> Fully booked
-          </div>
-          <div class="legend-item">
-            <div class="legend-dot unavailable"></div> Unavailable
-          </div>
+          <div class="legend-item"><div class="legend-dot available"></div> Available</div>
+          <div class="legend-item"><div class="legend-dot pending"></div> Has pending requests</div>
+          <div class="legend-item"><div class="legend-dot full"></div> Fully booked</div>
+          <div class="legend-item"><div class="legend-dot unavailable"></div> Unavailable</div>
         </div>
 
         <!-- SLOTS -->
@@ -112,7 +96,7 @@
           <h3 class="slots-date-title" id="slots-date-title"></h3>
           <p class="slots-subtitle">
             🟡 Yellow = someone else has a pending request for this slot (still bookable)<br>
-            ~~Strikethrough~~ = fully approved, unavailable
+            ~~Strikethrough~~ = approved and unavailable
           </p>
           <div id="slots-content"></div>
           <div class="selection-summary" id="selection-summary">
@@ -122,7 +106,7 @@
         </div>
       </div>
 
-      <!-- RIGHT COLUMN (form, appears beside calendar) -->
+      <!-- RIGHT COLUMN -->
       <div class="right-col" id="step2">
         <div class="right-col-header">
           <p class="section-label">Step 2</p>
@@ -134,8 +118,7 @@
         <div class="suggestion-banner" id="suggestion-banner">
           <strong>📅 Your selected time</strong>
           <span id="suggestion-text">—</span>
-          <div class="suggestion-note">ℹ️ Please select this same date and time in the form below — the form does not
-            auto-fill from your calendar selection.</div>
+          <div class="suggestion-note">ℹ️ Please select this same date and time in the form below — the form does not auto-fill from your calendar selection.</div>
         </div>
 
         <div class="tally-wrapper">
@@ -151,17 +134,10 @@
   </div>
 
   <style>
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 
-
-
   <script>var d = document, w = "https://tally.so/widgets/embed.js", v = function () { "undefined" != typeof Tally ? Tally.loadEmbeds() : d.querySelectorAll("iframe[data-tally-src]:not([src])").forEach((function (e) { e.src = e.dataset.tallySrc })) }; if ("undefined" != typeof Tally) v(); else if (d.querySelector('script[src="' + w + '"]') == null) { var s = d.createElement("script"); s.src = w, s.onload = v, s.onerror = v, d.body.appendChild(s); }</script>
-  <script src="api/bookings.js"></script>
   <script src="script.js"></script>
 </body>
 
